@@ -1,0 +1,20 @@
+name: Test Windows Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Test runner
+        shell: pwsh
+        run: |
+          Write-Host "Runner started successfully"
+          Write-Host "Computer:"
+          hostname
+          Write-Host "Windows:"
+          ver
+          Write-Host "PowerShell:"
+          $PSVersionTable.PSVersion
