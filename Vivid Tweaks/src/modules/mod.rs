@@ -1,0 +1,14 @@
+pub mod debloat;
+pub mod defender;
+pub mod gpu;
+pub mod input;
+pub mod memory;
+pub mod misc;
+pub mod network;
+pub mod notifications;
+pub mod performance;
+pub mod power;
+pub mod privacy;
+pub mod qol;
+pub mod security;
+pub mod shell;
