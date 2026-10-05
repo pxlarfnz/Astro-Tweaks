@@ -1,4 +1,3 @@
-```rust
 use anyhow::{bail, Result};
 use winreg::{
     enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE},
@@ -110,4 +109,4 @@ pub fn set_string(
 
     Ok(())
 }
-```
+
