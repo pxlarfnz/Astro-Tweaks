@@ -59,7 +59,7 @@ pub fn browser_menu() -> Result<()> {
     loop {
         println!();
         println!("================================");
-        println!("       VIVID BROWSER TOOL");
+        println!("       ASTRO BROWSER TOOL");
         println!("================================");
         println!("1. Install Brave");
         println!("2. Install LibreWolf");
