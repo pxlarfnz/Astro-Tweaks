@@ -1,10 +1,12 @@
 fn main() {
     #[cfg(windows)]
     {
-        let mut res = winres::WindowsResource::new();
-        res.set_icon("assets/vivid.ico");
+        let mut resource = winres::WindowsResource::new();
 
-        res.compile()
+        resource.set_icon("astro.ico");
+
+        resource
+            .compile()
             .expect("Failed to compile Windows resources");
     }
 }
