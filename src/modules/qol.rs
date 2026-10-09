@@ -1,12 +1,12 @@
+
 use anyhow::{Context, Result};
-use std::path::PathBuf;
-use std::process::Command;
 use std::env;
+use std::path::PathBuf;
 
-use crate::core::registry;
 use crate::core::command;
+use crate::core::registry;
 
-/// Apply the full Quality of Life + Interface pack
+/// Apply the full Quality of Life + Interface pack.
 pub fn apply() -> Result<()> {
     println!("[QOL] Applying Astro Tweaks Quality of Life pack...");
 
@@ -23,94 +23,220 @@ pub fn apply() -> Result<()> {
     Ok(())
 }
 
-fn get_wallpaper_path() -> PathBuf {
-    // 1. Try next to the executable
+/// Locate astro_background.jpg.
+fn get_wallpaper_path() -> Option<PathBuf> {
+    // First: assets folder beside the executable.
     if let Ok(exe) = env::current_exe() {
         if let Some(dir) = exe.parent() {
-            let candidate = dir.join("assets").join("image.png");
-            if candidate.exists() {
-                return candidate;
+            let candidate = dir.join("assets").join("astro_background.jpg");
+            if candidate.is_file() {
+                return Some(candidate);
             }
-            let candidate2 = dir.join("image.png");
-            if candidate2.exists() {
-                return candidate2;
+
+            // Second: beside the executable.
+            let candidate = dir.join("astro_background.jpg");
+            if candidate.is_file() {
+                return Some(candidate);
             }
         }
     }
 
-    // 2. Fallback – relative path (for development)
-    PathBuf::from("assets/image.png")
-}
-
-fn apply_wallpaper() -> Result<()> {
-    let wallpaper = get_wallpaper_path();
-
-    if !wallpaper.exists() {
-        println!("[QOL] Wallpaper not found at {:?}. Skipping wallpaper.", wallpaper);
-        return Ok(());
+    // Development fallbacks.
+    let candidate = PathBuf::from("assets/astro_background.jpg");
+    if candidate.is_file() {
+        return Some(candidate);
     }
 
-    println!("[QOL] Setting Astro wallpaper...");
+    let candidate = PathBuf::from("astro_background.jpg");
+    if candidate.is_file() {
+        return Some(candidate);
+    }
 
-    // Set desktop wallpaper
-    let path_str = wallpaper.to_string_lossy();
+    None
+}
+
+/// Apply the wallpaper and configure the current user's wallpaper policy.
+fn apply_wallpaper() -> Result<()> {
+    let source = match get_wallpaper_path() {
+        Some(path) => path,
+        None => {
+            println!(
+                "[QOL] astro_background.jpg was not found. \
+                 Wallpaper settings were not changed."
+            );
+            return Ok(());
+        }
+    };
+
+    println!("[QOL] Applying Astro wallpaper and policy...");
+
+    // Use a persistent location so the wallpaper doesn't depend
+    // on the original executable or working directory.
+    let program_data = env::var_os("PROGRAMDATA")
+        .map(PathBuf::from)
+        .context("Could not locate the ProgramData directory")?;
+
+    let wallpaper_dir = program_data.join("AstroTweaks");
+
+    std::fs::create_dir_all(&wallpaper_dir)
+        .context("Could not create the AstroTweaks wallpaper directory")?;
+
+    let wallpaper = wallpaper_dir.join("astro_background.jpg");
+
+    // Copy if missing, or if the source file size has changed.
+    let should_copy = !wallpaper.is_file()
+        || std::fs::metadata(&source)?.len()
+            != std::fs::metadata(&wallpaper)
+                .map(|metadata| metadata.len())
+                .unwrap_or(0);
+
+    if should_copy {
+        std::fs::copy(&source, &wallpaper)
+            .context("Could not copy astro_background.jpg to ProgramData")?;
+    }
+
+    let wallpaper_path = wallpaper.to_string_lossy().into_owned();
+
+    // Windows policy registry paths for the current user.
+    let system_policy =
+        r"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System";
+
+    let desktop_policy =
+        r"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop";
+
+    // Set the wallpaper path enforced by Windows policy.
+    registry::set_string(
+        system_policy,
+        "Wallpaper",
+        &wallpaper_path,
+    )?;
+
+    // Wallpaper style: 10 = Fill.
+    registry::set_string(
+        system_policy,
+        "WallpaperStyle",
+        "10",
+    )?;
+
+    // Enable "Prevent changing desktop background".
+    registry::set_dword(
+        desktop_policy,
+        "NoChangingWallPaper",
+        1,
+    )?;
+
+    // Set the wallpaper immediately for the current session.
+    // Escape single quotes before inserting the path into PowerShell.
+    let escaped_path = wallpaper_path.replace('\'', "''");
+
     let script = format!(
         r#"
+$ErrorActionPreference = 'Stop'
+
 Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
-public class Wallpaper {{
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
-    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+
+public class AstroWallpaper {{
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    public static extern bool SystemParametersInfo(
+        int action,
+        int param,
+        string path,
+        int flags
+    );
 }}
 "@
-[Wallpaper]::SystemParametersInfo(20, 0, "{}", 3)
+
+$result = [AstroWallpaper]::SystemParametersInfo(
+    20, 0, '{}', 3
+)
+
+if (-not $result) {{
+    throw "SystemParametersInfo failed to apply the wallpaper."
+}}
 "#,
-        path_str
+        escaped_path
     );
 
-    let _ = command::powershell(&script);
+    command::powershell(&script)
+        .context("Failed to apply the desktop wallpaper")?;
 
-    // Also set as lock screen (best effort)
-    let _ = registry::set_string(
+    // Preserve the original lock-screen setting.
+    registry::set_string(
         r"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager",
         "RotatingLockScreenEnabled",
         "0",
-    );
+    )?;
+
+    println!("[QOL] Wallpaper applied: {}", wallpaper_path);
+    println!("[QOL] Wallpaper-change policy enabled for the current user.");
 
     Ok(())
 }
 
 fn disable_annoying_features() -> Result<()> {
-    // Accessibility shortcuts
-    registry::set_string(r"HKCU\Control Panel\Accessibility\HighContrast", "Flags", "0")?;
-    registry::set_string(r"HKCU\Control Panel\Accessibility\Keyboard Response", "Flags", "0")?;
-    registry::set_string(r"HKCU\Control Panel\Accessibility\MouseKeys", "Flags", "0")?;
-    registry::set_string(r"HKCU\Control Panel\Accessibility\StickyKeys", "Flags", "0")?;
-    registry::set_string(r"HKCU\Control Panel\Accessibility\ToggleKeys", "Flags", "0")?;
+    // Accessibility shortcuts.
+    registry::set_string(
+        r"HKCU\Control Panel\Accessibility\HighContrast",
+        "Flags",
+        "0",
+    )?;
+    registry::set_string(
+        r"HKCU\Control Panel\Accessibility\Keyboard Response",
+        "Flags",
+        "0",
+    )?;
+    registry::set_string(
+        r"HKCU\Control Panel\Accessibility\MouseKeys",
+        "Flags",
+        "0",
+    )?;
+    registry::set_string(
+        r"HKCU\Control Panel\Accessibility\StickyKeys",
+        "Flags",
+        "0",
+    )?;
+    registry::set_string(
+        r"HKCU\Control Panel\Accessibility\ToggleKeys",
+        "Flags",
+        "0",
+    )?;
 
-    // Ease of Access sounds
-    registry::set_dword(r"HKCU\Control Panel\Accessibility", "Warning Sounds", 0)?;
-    registry::set_dword(r"HKCU\Control Panel\Accessibility", "Sound on Activation", 0)?;
+    // Ease of Access sounds.
+    registry::set_dword(
+        r"HKCU\Control Panel\Accessibility",
+        "Warning Sounds",
+        0,
+    )?;
+    registry::set_dword(
+        r"HKCU\Control Panel\Accessibility",
+        "Sound on Activation",
+        0,
+    )?;
 
-    // Disable AutoRun
+    // Disable AutoRun.
     registry::set_dword(
         r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\AutoplayHandlers",
         "DisableAutoplay",
         1,
     )?;
 
-    // Disable Aero Shake
+    // Disable Aero Shake.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "DisallowShaking",
         1,
     )?;
 
-    // Disable menu hover delay
-    registry::set_string(r"HKCU\Control Panel\Desktop", "MenuShowDelay", "0")?;
+    // Disable menu hover delay.
+    registry::set_string(
+        r"HKCU\Control Panel\Desktop",
+        "MenuShowDelay",
+        "0",
+    )?;
 
-    // Disable low disk space checks
+    // Disable low disk space checks.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer",
         "NoLowDiskSpaceChecks",
@@ -121,14 +247,14 @@ fn disable_annoying_features() -> Result<()> {
 }
 
 fn configure_explorer() -> Result<()> {
-    // Open to This PC
+    // Open to This PC.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "LaunchTo",
         1,
     )?;
 
-    // Show hidden files + extensions
+    // Show hidden files and extensions.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "Hidden",
@@ -140,14 +266,14 @@ fn configure_explorer() -> Result<()> {
         0,
     )?;
 
-    // Compact mode
+    // Compact mode.
     registry::set_dword(
         r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "UseCompactMode",
         1,
     )?;
 
-    // Hide recent / frequent
+    // Hide recent and frequent items.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer",
         "ShowRecent",
@@ -159,14 +285,14 @@ fn configure_explorer() -> Result<()> {
         0,
     )?;
 
-    // Hide Gallery (best effort via registry)
+    // Hide Gallery (best effort via registry).
     registry::set_dword(
         r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "ShowGallery",
         0,
     )?;
 
-    // Full context menu
+    // Context menu setting from the original QOL pack.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer",
         "MultipleInvokePromptMinimum",
@@ -177,35 +303,35 @@ fn configure_explorer() -> Result<()> {
 }
 
 fn configure_taskbar_and_start() -> Result<()> {
-    // Taskbar left
+    // Align taskbar to the left.
     registry::set_dword(
         r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "TaskbarAl",
         0,
     )?;
 
-    // Hide Task View
+    // Hide Task View.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "ShowTaskViewButton",
         0,
     )?;
 
-    // End Task in taskbar
+    // Enable End Task in the taskbar.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings",
         "TaskbarEndTask",
         1,
     )?;
 
-    // Disable Chat / Widgets icon
+    // Disable Chat taskbar icon.
     registry::set_dword(
         r"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "TaskbarMn",
         0,
     )?;
 
-    // Disable startup delay
+    // Disable startup delay.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Serialize",
         "StartupDelayInMSec",
@@ -222,10 +348,19 @@ fn configure_visual_effects() -> Result<()> {
         3,
     )?;
 
-    registry::set_string(r"HKCU\Control Panel\Desktop", "FontSmoothing", "2")?;
-    registry::set_string(r"HKCU\Control Panel\Desktop\WindowMetrics", "MinAnimate", "0")?;
+    registry::set_string(
+        r"HKCU\Control Panel\Desktop",
+        "FontSmoothing",
+        "2",
+    )?;
 
-    // Disable some animations
+    registry::set_string(
+        r"HKCU\Control Panel\Desktop\WindowMetrics",
+        "MinAnimate",
+        "0",
+    )?;
+
+    // Disable some animations.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
         "TaskbarAnimations",
@@ -252,38 +387,66 @@ fn disable_copilot_and_chat() -> Result<()> {
 }
 
 fn apply_input_and_accessibility() -> Result<()> {
-    // Disable mouse acceleration
-    registry::set_string(r"HKCU\Control Panel\Mouse", "MouseSpeed", "0")?;
-    registry::set_string(r"HKCU\Control Panel\Mouse", "MouseThreshold1", "0")?;
-    registry::set_string(r"HKCU\Control Panel\Mouse", "MouseThreshold2", "0")?;
+    // Disable mouse acceleration.
+    registry::set_string(
+        r"HKCU\Control Panel\Mouse",
+        "MouseSpeed",
+        "0",
+    )?;
+    registry::set_string(
+        r"HKCU\Control Panel\Mouse",
+        "MouseThreshold1",
+        "0",
+    )?;
+    registry::set_string(
+        r"HKCU\Control Panel\Mouse",
+        "MouseThreshold2",
+        "0",
+    )?;
 
-    // Faster mouse hover
-    registry::set_string(r"HKCU\Control Panel\Desktop", "MouseHoverTime", "20")?;
+    // Faster mouse hover.
+    registry::set_string(
+        r"HKCU\Control Panel\Desktop",
+        "MouseHoverTime",
+        "20",
+    )?;
 
     Ok(())
 }
 
 fn apply_misc_qol() -> Result<()> {
-    // Faster shutdown
-    registry::set_string(r"HKCU\Control Panel\Desktop", "HungAppTimeout", "2000")?;
-    registry::set_string(r"HKCU\Control Panel\Desktop", "WaitToKillAppTimeOut", "2000")?;
+    // Faster shutdown.
+    registry::set_string(
+        r"HKCU\Control Panel\Desktop",
+        "HungAppTimeout",
+        "2000",
+    )?;
+    registry::set_string(
+        r"HKCU\Control Panel\Desktop",
+        "WaitToKillAppTimeOut",
+        "2000",
+    )?;
     registry::set_string(
         r"HKLM\SYSTEM\CurrentControlSet\Control",
         "WaitToKillServiceTimeout",
         "2000",
     )?;
 
-    // Auto end tasks
-    registry::set_string(r"HKCU\Control Panel\Desktop", "AutoEndTasks", "1")?;
+    // Auto-end tasks.
+    registry::set_string(
+        r"HKCU\Control Panel\Desktop",
+        "AutoEndTasks",
+        "1",
+    )?;
 
-    // Disable Windows Feedback
+    // Disable Windows Feedback.
     registry::set_dword(
         r"HKCU\SOFTWARE\Microsoft\Siuf\Rules",
         "NumberOfSIUFInPeriod",
         0,
     )?;
 
-    // Disable Spotlight
+    // Disable Spotlight features.
     registry::set_dword(
         r"HKCU\SOFTWARE\Policies\Microsoft\Windows\CloudContent",
         "DisableWindowsSpotlightFeatures",
