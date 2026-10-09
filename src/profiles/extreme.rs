@@ -3,7 +3,7 @@ use anyhow::Result;
 pub fn apply() -> Result<()> {
     println!();
     println!("======================================");
-    println!("       VIVID EXTREME PROFILE");
+    println!("       ASTRO EXTREME PROFILE");
     println!("======================================");
     println!();
 
