@@ -20,7 +20,7 @@ pub struct Backup {
 
 impl Backup {
     pub fn path() -> PathBuf {
-        PathBuf::from(r"C:\ProgramData\VividTweaks\backup.json")
+        PathBuf::from(r"C:\ProgramData\AstroTweaks\backup.json")
     }
 
     pub fn load() -> Self {
