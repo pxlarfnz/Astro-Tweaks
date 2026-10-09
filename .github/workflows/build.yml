@@ -1,8 +1,9 @@
-name: Build Vivid Tweaks
+```yaml
+name: Build Astro
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -10,25 +11,28 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: List files (debug)
-      run: |
-        dir
-        echo "-----"
-        dir src
-        echo "-----"
-        type Cargo.toml
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      - name: Build Astro
+        run: cargo build --release
 
-    - name: Build Release
-      run: cargo build --release
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          if (!(Test-Path "target/release/Astro.exe")) {
+            Write-Host "Astro.exe was not found. Release directory contents:"
+            Get-ChildItem "target/release" -ErrorAction SilentlyContinue
+            exit 1
+          }
 
-    - name: Upload the .exe
-      uses: actions/upload-artifact@v4
-      with:
-        name: Vivid-Tweaks
-        path: target/release/vivid-tweaks.exe
+      - name: Upload Astro.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: Astro-Windows
+          path: target/release/Astro.exe
+          if-no-files-found: error
+```
