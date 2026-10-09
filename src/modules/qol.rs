@@ -8,7 +8,7 @@ use crate::core::command;
 
 /// Apply the full Quality of Life + Interface pack
 pub fn apply() -> Result<()> {
-    println!("[QOL] Applying Vivid Tweaks Quality of Life pack...");
+    println!("[QOL] Applying Astro Tweaks Quality of Life pack...");
 
     apply_wallpaper()?;
     disable_annoying_features()?;
@@ -27,15 +27,19 @@ fn get_wallpaper_path() -> PathBuf {
     // 1. Try next to the executable
     if let Ok(exe) = env::current_exe() {
         if let Some(dir) = exe.parent() {
-            let candidate = dir.join("assets").join("Vivid_background.jpg");
+            let candidate = dir.join("assets").join("image.png");
             if candidate.exists() {
                 return candidate;
+            }
+            let candidate2 = dir.join("image.png");
+            if candidate2.exists() {
+                return candidate2;
             }
         }
     }
 
     // 2. Fallback – relative path (for development)
-    PathBuf::from("assets/Vivid_background.jpg")
+    PathBuf::from("assets/image.png")
 }
 
 fn apply_wallpaper() -> Result<()> {
@@ -46,7 +50,7 @@ fn apply_wallpaper() -> Result<()> {
         return Ok(());
     }
 
-    println!("[QOL] Setting Vivid wallpaper...");
+    println!("[QOL] Setting Astro wallpaper...");
 
     // Set desktop wallpaper
     let path_str = wallpaper.to_string_lossy();
