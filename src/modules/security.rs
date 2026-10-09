@@ -3,7 +3,7 @@ use anyhow::Result;
 pub fn audit() -> Result<()> {
     println!();
     println!("======================================");
-    println!("       VIVID SECURITY AUDIT");
+    println!("       ASTRO SECURITY AUDIT");
     println!("======================================");
 
     crate::core::command::powershell(
