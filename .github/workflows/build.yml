@@ -1,4 +1,3 @@
-```yaml
 name: Build Astro
 
 on:
@@ -35,4 +34,4 @@ jobs:
           name: Astro-Windows
           path: target/release/Astro.exe
           if-no-files-found: error
-```
+
