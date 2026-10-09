@@ -3,7 +3,7 @@ use anyhow::Result;
 pub fn apply() -> Result<()> {
     println!();
     println!("======================================");
-    println!("      VIVID STREAMING PROFILE");
+    println!("      ASTRO STREAMING PROFILE");
     println!("======================================");
     println!();
 
