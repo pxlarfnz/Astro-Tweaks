@@ -41,7 +41,7 @@ pub fn is_admin() -> Result<bool> {
 
 pub fn ensure_admin() -> Result<()> {
     if !is_admin()? {
-        bail!("Beyond Tweaks must be run as Administrator.");
+        bail!("Astro Tweaks must be run as Administrator.");
     }
 
     Ok(())
