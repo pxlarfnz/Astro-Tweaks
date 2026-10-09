@@ -5,7 +5,7 @@ use crate::config::optimization::OptimizationConfig;
 pub fn apply(config: &OptimizationConfig) -> Result<()> {
     println!();
     println!("======================================");
-    println!("       VIVID ESPORTS PROFILE");
+    println!("       ASTRO ESPORTS PROFILE");
     println!("======================================");
 
     if config.input {
