@@ -1,5 +1,3 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 mod config;
 mod core;
 mod hardware;
@@ -21,7 +19,7 @@ fn main() -> Result<()> {
     loop {
         println!();
         println!("======================================");
-        println!("         VIVID TWEAKS 2.0");
+        println!("         ASTRO TWEAKS 2.0");
         println!("======================================");
         println!("1. Esports");
         println!("2. Streaming");
