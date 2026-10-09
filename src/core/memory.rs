@@ -11,7 +11,7 @@ Get-Process | ForEach-Object {
 using System;
 using System.Runtime.InteropServices;
 
-public static class VividWorkingSet
+public static class AstroWorkingSet
 {
     [DllImport("psapi.dll")]
     public static extern bool EmptyWorkingSet(IntPtr hProcess);
@@ -22,7 +22,7 @@ public static class VividWorkingSet
             -TypeDefinition $type `
             -ErrorAction SilentlyContinue
 
-        [VividWorkingSet]::EmptyWorkingSet($_.Handle) |
+        [AstroWorkingSet]::EmptyWorkingSet($_.Handle) |
             Out-Null
     }
     catch {}
