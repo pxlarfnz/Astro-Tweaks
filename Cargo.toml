@@ -1,8 +1,14 @@
+```toml
 [package]
 name = "astro-tweaks"
 version = "2.0.0"
 edition = "2021"
 build = "build.rs"
+autobins = false
+
+[[bin]]
+name = "Astro"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
@@ -27,3 +33,4 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+```
