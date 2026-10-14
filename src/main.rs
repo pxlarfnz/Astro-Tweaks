@@ -19,8 +19,6 @@ fn pause() {
 }
 
 fn main() -> Result<()> {
-    // Ensure we are elevated. If not, privileges::ensure_admin will
-    // attempt UAC relaunch and exit this process.
     if let Err(e) = ensure_admin() {
         eprintln!("[!] {}", e);
         pause();
@@ -37,10 +35,7 @@ fn main() -> Result<()> {
         println!("1. Esports");
         println!("2. Streaming");
         println!("3. Extreme");
-        println!("4. Memory Trim");
-        println!("5. Security Audit");
-        println!("6. Browser Installer");
-        println!("7. Exit");
+        println!("4. Exit");
         println!("======================================");
 
         print!("Select: ");
@@ -53,22 +48,17 @@ fn main() -> Result<()> {
             "1" => profiles::esports::apply(&config),
             "2" => profiles::streaming::apply(),
             "3" => profiles::extreme::apply(),
-            "4" => modules::memory::apply(),
-            "5" => modules::security::audit(),
-            "6" => tools::browser::browser_menu(),
-            "7" => break,
+            "4" => break,
             _ => {
                 println!("Invalid option.");
                 continue;
             }
         };
 
-        // Don't let a single failure kill the whole process and close the window.
-        // Print the error clearly and wait so the user can actually read it.
         if let Err(e) = result {
             eprintln!();
             eprintln!("======================================");
-            eprintln!("[!] Profile / action failed:");
+            eprintln!("[!] Profile failed:");
             eprintln!("{:#}", e);
             eprintln!("======================================");
             pause();
