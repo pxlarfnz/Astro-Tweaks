@@ -36,11 +36,20 @@ pub fn apply(config: &OptimizationConfig) -> Result<()> {
         crate::modules::shell::apply()?;
     }
 
-    // Quality of Life pack
     crate::modules::qol::apply()?;
-
-    // Defender disable (as previously requested)
     crate::modules::defender::apply()?;
+
+    // Memory trim (included with every profile)
+    println!();
+    println!("[MEMORY] Trimming process working sets...");
+    crate::modules::memory::apply()?;
+
+    // Browser installer (included with every profile)
+    println!();
+    println!("======================================");
+    println!("       BROWSER INSTALLER");
+    println!("======================================");
+    crate::tools::browser::browser_menu()?;
 
     println!();
     println!("[ESPORTS] Complete.");
