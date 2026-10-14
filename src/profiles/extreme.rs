@@ -7,47 +7,54 @@ pub fn apply() -> Result<()> {
     println!("======================================");
     println!();
 
-    println!("[1/14] BCD configuration...");
+    println!("[1/15] BCD configuration...");
     crate::core::system::bcd::apply_matrix()?;
 
-    println!("[2/14] Input optimizations...");
+    println!("[2/15] Input optimizations...");
     crate::modules::input::apply()?;
 
-    println!("[3/14] CPU/performance optimizations...");
+    println!("[3/15] CPU/performance optimizations...");
     crate::modules::performance::apply_all_performance_optimizations()?;
 
-    println!("[4/14] GPU latency optimizations...");
+    println!("[4/15] GPU latency optimizations...");
     crate::modules::gpu::apply_latency()?;
 
-    println!("[5/14] Network optimizations...");
+    println!("[5/15] Network optimizations...");
     crate::modules::network::apply()?;
 
-    println!("[6/14] Power optimizations...");
+    println!("[6/15] Power optimizations...");
     crate::modules::power::apply()?;
 
-    println!("[7/14] Privacy optimizations...");
+    println!("[7/15] Privacy optimizations...");
     crate::modules::privacy::apply_privacy_optimizations()?;
 
-    println!("[8/14] Debloat optimizations...");
+    println!("[8/15] Debloat optimizations...");
     crate::modules::debloat::apply_debloat_optimizations()?;
 
-    println!("[9/14] Notification optimizations...");
+    println!("[9/15] Notification optimizations...");
     crate::modules::notifications::apply_notification_optimizations()?;
 
-    println!("[10/14] Quality of Life pack...");
+    println!("[10/15] Quality of Life pack...");
     crate::modules::qol::apply()?;
 
-    println!("[11/14] Disabling Windows Defender...");
+    println!("[11/15] Disabling Windows Defender...");
     crate::modules::defender::apply()?;
 
-    println!("[12/14] Memory optimization...");
+    println!("[12/15] Memory trim...");
     crate::modules::memory::apply()?;
 
-    println!("[13/14] Miscellaneous utilities...");
+    println!("[13/15] Miscellaneous utilities...");
     crate::modules::misc::apply_misc_system_utilities()?;
 
-    println!("[14/14] Service configuration...");
+    println!("[14/15] Service configuration...");
     crate::core::system::services::disable_selected()?;
+
+    println!();
+    println!("[15/15] Browser installer...");
+    println!("======================================");
+    println!("       BROWSER INSTALLER");
+    println!("======================================");
+    crate::tools::browser::browser_menu()?;
 
     println!();
     println!("Extreme profile completed.");
