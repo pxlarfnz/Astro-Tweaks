@@ -10,5 +10,4 @@ pub mod performance;
 pub mod power;
 pub mod privacy;
 pub mod qol;
-pub mod security;
 pub mod shell;
