@@ -20,13 +20,32 @@ pub fn run(program: &str, args: &[&str]) -> Result<Output> {
     Ok(output)
 }
 
+/// Run a command and log it. Non-zero exit is reported as a warning
+/// instead of aborting the whole profile (many tweaks are best-effort).
 pub fn run_logged(program: &str, args: &[&str]) -> Result<()> {
     println!("[CMD] {} {}", program, args.join(" "));
 
-    let output = run(program, args)?;
+    let output = Command::new(program)
+        .args(args)
+        .output()
+        .with_context(|| format!("Failed to start {}", program))?;
 
     if !output.stdout.is_empty() {
-        println!("{}", String::from_utf8_lossy(&output.stdout).trim());
+        let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        // Filter the literal "null" that PowerShell sometimes prints
+        if !text.is_empty() && text.to_lowercase() != "null" {
+            println!("{}", text);
+        }
+    }
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        if !err.is_empty() && err.to_lowercase() != "null" {
+            eprintln!("[WARN] {} -> {}", program, err);
+        } else {
+            eprintln!("[WARN] {} exited with {}", program, output.status);
+        }
+        // Do not bail — continue applying the rest of the profile.
     }
 
     Ok(())
@@ -54,15 +73,21 @@ pub fn powershell_quiet(script: &str) -> Result<String> {
             "-Command",
             script,
         ])
-        .output()?;
+        .output()
+        .with_context(|| "Failed to start powershell.exe")?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .to_string();
 
     if !output.status.success() {
-        bail!("{}", String::from_utf8_lossy(&output.stderr));
+        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        if !err.is_empty() && err.to_lowercase() != "null" {
+            eprintln!("[WARN] powershell: {}", err);
+        }
     }
 
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .trim()
-        .to_string())
+    Ok(stdout)
 }
 
 pub fn powercfg(args: &[&str]) -> Result<()> {
