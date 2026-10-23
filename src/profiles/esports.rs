@@ -1,12 +1,12 @@
-use anyhow::Result;
+use anyhow::Result;\nuse colored::Colorize;
 
 use crate::config::optimization::OptimizationConfig;
 
 pub fn apply(config: &OptimizationConfig) -> Result<()> {
     println!();
-    println!("======================================");
-    println!("       ASTRO ESPORTS PROFILE");
-    println!("======================================");
+    println!("{}", "======================================".bright_yellow());
+    println!("{}", "       ASTRO ESPORTS PROFILE".bright_yellow().bold());
+    println!("{}", "======================================".bright_yellow());
 
     if config.input {
         crate::modules::input::apply()?;
@@ -41,20 +41,20 @@ pub fn apply(config: &OptimizationConfig) -> Result<()> {
     // The legacy Defender module is preserved in the repository, but is not
     // automatically executed because it attempts to disable built-in security
     // protections and tamper with protected Windows files.
-    println!("[SECURITY] Windows Defender changes were skipped.");
+    println!("{}", "[SECURITY] Windows Defender changes were skipped.".bright_yellow());
 
     println!();
-    println!("[MEMORY] Trimming process working sets...");
+    println!("{}", "[MEMORY] Trimming process working sets...".bright_yellow());
     crate::modules::memory::apply()?;
 
     println!();
-    println!("======================================");
-    println!("       BROWSER INSTALLER");
-    println!("======================================");
+    println!("{}", "======================================".bright_yellow());
+    println!("{}", "       BROWSER INSTALLER".bright_yellow().bold());
+    println!("{}", "======================================".bright_yellow());
     crate::tools::browser::browser_menu()?;
 
     println!();
-    println!("[ESPORTS] Complete.");
+    println!("{}", "[ESPORTS] Complete.".bright_yellow());
     println!("A reboot may be required for some settings to take effect.");
 
     Ok(())
