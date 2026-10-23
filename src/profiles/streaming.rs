@@ -1,10 +1,10 @@
-use anyhow::Result;
+use anyhow::Result;\nuse colored::Colorize;
 
 pub fn apply() -> Result<()> {
     println!();
-    println!("======================================");
+    println!("{}", "======================================".bright_yellow());
     println!("      ASTRO STREAMING PROFILE");
-    println!("======================================");
+    println!("{}", "======================================".bright_yellow());
     println!();
 
     println!("[1/12] Input optimizations...");
@@ -43,9 +43,9 @@ pub fn apply() -> Result<()> {
 
     println!();
     println!("[12/12] Browser installer...");
-    println!("======================================");
-    println!("       BROWSER INSTALLER");
-    println!("======================================");
+    println!("{}", "======================================".bright_yellow());
+    println!("{}", "       BROWSER INSTALLER".bright_yellow().bold());
+    println!("{}", "======================================".bright_yellow());
     crate::tools::browser::browser_menu()?;
 
     println!();
