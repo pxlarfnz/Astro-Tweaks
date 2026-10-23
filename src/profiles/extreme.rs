@@ -7,9 +7,9 @@ pub fn apply() -> Result<()> {
     println!("======================================");
     println!();
 
-    // Do not apply the legacy BCD matrix automatically: it changes boot
-    // security and hypervisor settings, including early-launch anti-malware.
-    println!("[1/13] Skipping risky boot configuration changes.");
+    // The matrix is retained, with boot-security-disabling entries excluded.
+    println!("[1/13] Boot configuration matrix...");
+    crate::core::system::bcd::apply_matrix()?;
 
     println!("[2/13] Input optimizations...");
     crate::modules::input::apply()?;
@@ -38,8 +38,8 @@ pub fn apply() -> Result<()> {
     println!("[10/13] Quality of Life pack...");
     crate::modules::qol::apply()?;
 
-    // Preserve the existing module source but never automatically disable
-    // Defender, its services, or protected Windows security files.
+    // Keep the legacy source file, but do not automatically disable Defender
+    // or tamper with protected Windows security files.
     println!("[SECURITY] Windows Defender changes were skipped.");
 
     println!("[11/13] Memory trim...");
@@ -56,7 +56,7 @@ pub fn apply() -> Result<()> {
 
     println!();
     println!("Extreme profile completed.");
-    println!("A reboot may be required for some settings to take effect.");
+    println!("Review boot changes carefully; a reboot may be required.");
 
     Ok(())
 }
