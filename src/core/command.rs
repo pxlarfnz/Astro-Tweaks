@@ -1,22 +1,84 @@
-use anyhow::{bail, Context, Result};
-use std::process::{Command, Output};
-use std::time::Duration;
+use anyhow::{anyhow, bail, Context, Result};
+use std::{
+    io::Read,
+    process::{Command, Output, Stdio},
+    thread,
+    time::Duration,
+};
+use wait_timeout::ChildExt;
+
+const DEFAULT_COMMAND_TIMEOUT: Duration = Duration::from_secs(120);
+
+/// Run a child process with a finite timeout while draining stdout and stderr
+/// concurrently so a full pipe cannot deadlock the child.
+pub fn run_with_timeout(
+    program: &str,
+    args: &[&str],
+    timeout: Duration,
+) -> Result<Output> {
+    let mut child = Command::new(program)
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .with_context(|| format!("Failed to start {program}"))?;
+
+    let stdout = child.stdout.take().context("Could not capture command stdout")?;
+    let stderr = child.stderr.take().context("Could not capture command stderr")?;
+
+    let stdout_reader = thread::spawn(move || {
+        let mut bytes = Vec::new();
+        stdout.read_to_end(&mut bytes).map(|_| bytes)
+    });
+    let stderr_reader = thread::spawn(move || {
+        let mut bytes = Vec::new();
+        stderr.read_to_end(&mut bytes).map(|_| bytes)
+    });
+
+    let status = match child.wait_timeout(timeout) {
+        Ok(Some(status)) => status,
+        Ok(None) => {
+            let _ = child.kill();
+            let _ = child.wait();
+            // Do not block the main thread indefinitely if a descendant process
+            // inherited a pipe handle and kept it open after the timed-out child.
+            drop(stdout_reader);
+            drop(stderr_reader);
+            bail!(
+                "{program} exceeded the {} second timeout and was terminated",
+                timeout.as_secs()
+            );
+        }
+        Err(error) => {
+            let _ = child.kill();
+            let _ = child.wait();
+            drop(stdout_reader);
+            drop(stderr_reader);
+            return Err(error).with_context(|| format!("Failed while waiting for {program}"));
+        }
+    };
+
+    let stdout = stdout_reader
+        .join()
+        .map_err(|_| anyhow!("stdout reader for {program} panicked"))?
+        .with_context(|| format!("Failed to read stdout from {program}"))?;
+    let stderr = stderr_reader
+        .join()
+        .map_err(|_| anyhow!("stderr reader for {program} panicked"))?
+        .with_context(|| format!("Failed to read stderr from {program}"))?;
+
+    Ok(Output { status, stdout, stderr })
+}
 
 pub fn run(program: &str, args: &[&str]) -> Result<Output> {
-    let output = Command::new(program)
-        .args(args)
-        .output()
-        .with_context(|| format!("Failed to start {}", program))?;
-
+    let output = run_with_timeout(program, args, DEFAULT_COMMAND_TIMEOUT)?;
     if !output.status.success() {
         bail!(
-            "{} exited with {}: {}",
-            program,
+            "{program} exited with {}: {}",
             output.status,
             String::from_utf8_lossy(&output.stderr).trim()
         );
     }
-
     Ok(output)
 }
 
@@ -25,16 +87,13 @@ pub fn run(program: &str, args: &[&str]) -> Result<Output> {
 pub fn run_logged(program: &str, args: &[&str]) -> Result<()> {
     println!("[CMD] {} {}", program, args.join(" "));
 
-    let output = Command::new(program)
-        .args(args)
-        .output()
-        .with_context(|| format!("Failed to start {}", program))?;
+    let output = run_with_timeout(program, args, DEFAULT_COMMAND_TIMEOUT)
+        .with_context(|| format!("Command failed or timed out: {program}"))?;
 
     if !output.stdout.is_empty() {
         let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        // Filter the literal "null" that PowerShell sometimes prints
         if !text.is_empty() && text.to_lowercase() != "null" {
-            println!("{}", text);
+            println!("{text}");
         }
     }
 
@@ -45,7 +104,6 @@ pub fn run_logged(program: &str, args: &[&str]) -> Result<()> {
         } else {
             eprintln!("[WARN] {} exited with {}", program, output.status);
         }
-        // Do not bail — continue applying the rest of the profile.
     }
 
     Ok(())
@@ -65,29 +123,27 @@ pub fn powershell(script: &str) -> Result<()> {
 }
 
 pub fn powershell_quiet(script: &str) -> Result<String> {
-    let output = Command::new("powershell.exe")
-        .args([
+    let output = run_with_timeout(
+        "powershell.exe",
+        &[
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
             "-Command",
             script,
-        ])
-        .output()
-        .with_context(|| "Failed to start powershell.exe")?;
-
-    let stdout = String::from_utf8_lossy(&output.stdout)
-        .trim()
-        .to_string();
+        ],
+        DEFAULT_COMMAND_TIMEOUT,
+    )
+    .context("Failed to run PowerShell or the command timed out")?;
 
     if !output.status.success() {
         let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
         if !err.is_empty() && err.to_lowercase() != "null" {
-            eprintln!("[WARN] powershell: {}", err);
+            eprintln!("[WARN] powershell: {err}");
         }
     }
 
-    Ok(stdout)
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 pub fn powercfg(args: &[&str]) -> Result<()> {
@@ -107,5 +163,5 @@ pub fn fsutil(args: &[&str]) -> Result<()> {
 }
 
 pub fn delay() {
-    std::thread::sleep(Duration::from_millis(100));
+    thread::sleep(Duration::from_millis(100));
 }
