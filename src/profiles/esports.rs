@@ -37,14 +37,16 @@ pub fn apply(config: &OptimizationConfig) -> Result<()> {
     }
 
     crate::modules::qol::apply()?;
-    crate::modules::defender::apply()?;
 
-    // Memory trim (included with every profile)
+    // The legacy Defender module is preserved in the repository, but is not
+    // automatically executed because it attempts to disable built-in security
+    // protections and tamper with protected Windows files.
+    println!("[SECURITY] Windows Defender changes were skipped.");
+
     println!();
     println!("[MEMORY] Trimming process working sets...");
     crate::modules::memory::apply()?;
 
-    // Browser installer (included with every profile)
     println!();
     println!("======================================");
     println!("       BROWSER INSTALLER");
@@ -53,7 +55,7 @@ pub fn apply(config: &OptimizationConfig) -> Result<()> {
 
     println!();
     println!("[ESPORTS] Complete.");
-    println!("⚠️  Reboot is strongly recommended.");
+    println!("A reboot may be required for some settings to take effect.");
 
     Ok(())
 }

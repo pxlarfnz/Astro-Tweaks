@@ -7,50 +7,48 @@ pub fn apply() -> Result<()> {
     println!("======================================");
     println!();
 
-    println!("[1/15] BCD configuration...");
+    // The matrix is retained, with boot-security-disabling entries excluded.
+    println!("[1/13] Boot configuration matrix...");
     crate::core::system::bcd::apply_matrix()?;
 
-    println!("[2/15] Input optimizations...");
+    println!("[2/13] Input optimizations...");
     crate::modules::input::apply()?;
 
-    println!("[3/15] CPU/performance optimizations...");
+    println!("[3/13] CPU/performance optimizations...");
     crate::modules::performance::apply_all_performance_optimizations()?;
 
-    println!("[4/15] GPU latency optimizations...");
+    println!("[4/13] GPU latency optimizations...");
     crate::modules::gpu::apply_latency()?;
 
-    println!("[5/15] Network optimizations...");
+    println!("[5/13] Network optimizations...");
     crate::modules::network::apply()?;
 
-    println!("[6/15] Power optimizations...");
+    println!("[6/13] Power optimizations...");
     crate::modules::power::apply()?;
 
-    println!("[7/15] Privacy optimizations...");
+    println!("[7/13] Privacy optimizations...");
     crate::modules::privacy::apply_privacy_optimizations()?;
 
-    println!("[8/15] Debloat optimizations...");
+    println!("[8/13] Debloat optimizations...");
     crate::modules::debloat::apply_debloat_optimizations()?;
 
-    println!("[9/15] Notification optimizations...");
+    println!("[9/13] Notification optimizations...");
     crate::modules::notifications::apply_notification_optimizations()?;
 
-    println!("[10/15] Quality of Life pack...");
+    println!("[10/13] Quality of Life pack...");
     crate::modules::qol::apply()?;
 
-    println!("[11/15] Disabling Windows Defender...");
-    crate::modules::defender::apply()?;
+    // Keep the legacy source file, but do not automatically disable Defender
+    // or tamper with protected Windows security files.
+    println!("[SECURITY] Windows Defender changes were skipped.");
 
-    println!("[12/15] Memory trim...");
+    println!("[11/13] Memory trim...");
     crate::modules::memory::apply()?;
 
-    println!("[13/15] Miscellaneous utilities...");
+    println!("[12/13] Miscellaneous utilities...");
     crate::modules::misc::apply_misc_system_utilities()?;
 
-    println!("[14/15] Service configuration...");
-    crate::core::system::services::disable_selected()?;
-
-    println!();
-    println!("[15/15] Browser installer...");
+    println!("[13/13] Browser installer...");
     println!("======================================");
     println!("       BROWSER INSTALLER");
     println!("======================================");
@@ -58,7 +56,7 @@ pub fn apply() -> Result<()> {
 
     println!();
     println!("Extreme profile completed.");
-    println!("⚠️  Reboot is strongly recommended.");
+    println!("Review boot changes carefully; a reboot may be required.");
 
     Ok(())
 }
