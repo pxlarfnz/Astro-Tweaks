@@ -1,10 +1,10 @@
-use anyhow::Result;
+use anyhow::Result;\nuse colored::Colorize;
 
 pub fn apply() -> Result<()> {
     println!();
-    println!("======================================");
-    println!("       ASTRO EXTREME PROFILE");
-    println!("======================================");
+    println!("{}", "======================================".bright_yellow());
+    println!("{}", "       ASTRO EXTREME PROFILE".bright_yellow().bold());
+    println!("{}", "======================================".bright_yellow());
     println!();
 
     // The matrix is retained, with boot-security-disabling entries excluded.
@@ -40,7 +40,7 @@ pub fn apply() -> Result<()> {
 
     // Keep the legacy source file, but do not automatically disable Defender
     // or tamper with protected Windows security files.
-    println!("[SECURITY] Windows Defender changes were skipped.");
+    println!("{}", "[SECURITY] Windows Defender changes were skipped.".bright_yellow());
 
     println!("[11/13] Memory trim...");
     crate::modules::memory::apply()?;
@@ -49,13 +49,13 @@ pub fn apply() -> Result<()> {
     crate::modules::misc::apply_misc_system_utilities()?;
 
     println!("[13/13] Browser installer...");
-    println!("======================================");
-    println!("       BROWSER INSTALLER");
-    println!("======================================");
+    println!("{}", "======================================".bright_yellow());
+    println!("{}", "       BROWSER INSTALLER".bright_yellow().bold());
+    println!("{}", "======================================".bright_yellow());
     crate::tools::browser::browser_menu()?;
 
     println!();
-    println!("Extreme profile completed.");
+    println!("{}", "Extreme profile completed.".bright_yellow());
     println!("Review boot changes carefully; a reboot may be required.");
 
     Ok(())
