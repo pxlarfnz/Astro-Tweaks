@@ -1,9 +1,10 @@
-use anyhow::Result;\nuse colored::Colorize;
+use anyhow::Result;
+use colored::Colorize;
 
 pub fn apply() -> Result<()> {
     println!();
     println!("{}", "======================================".bright_yellow());
-    println!("      ASTRO STREAMING PROFILE");
+    println!("{}", "      ASTRO STREAMING PROFILE".bright_yellow().bold());
     println!("{}", "======================================".bright_yellow());
     println!();
 
