@@ -1,4 +1,5 @@
-use anyhow::Result;\nuse colored::Colorize;
+use anyhow::Result;
+use colored::Colorize;
 
 pub fn apply() -> Result<()> {
     println!();
