@@ -20,7 +20,7 @@ fn pause() {
 
 fn main() -> Result<()> {
     if let Err(e) = ensure_admin() {
-        eprintln!("[!] {}", e);
+        eprintln!("[!] {e}");
         pause();
         return Err(e);
     }
@@ -42,7 +42,10 @@ fn main() -> Result<()> {
         io::stdout().flush()?;
 
         let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
+        if io::stdin().read_line(&mut input)? == 0 {
+            println!("Input stream closed. Exiting Astro Tweaks.");
+            break;
+        }
 
         let result = match input.trim() {
             "1" => profiles::esports::apply(&config),
@@ -50,7 +53,7 @@ fn main() -> Result<()> {
             "3" => profiles::extreme::apply(),
             "4" => break,
             _ => {
-                println!("Invalid option.");
+                println!("Invalid option. Enter 1, 2, 3, or 4.");
                 continue;
             }
         };
@@ -59,7 +62,7 @@ fn main() -> Result<()> {
             eprintln!();
             eprintln!("======================================");
             eprintln!("[!] Profile failed:");
-            eprintln!("{:#}", e);
+            eprintln!("{e:#}");
             eprintln!("======================================");
             pause();
         }
