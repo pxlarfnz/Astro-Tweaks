@@ -32,10 +32,10 @@ fn main() -> Result<()> {
         println!("{}", "======================================".bright_yellow());
         println!("{}", "         ASTRO TWEAKS 2.0".bright_yellow().bold());
         println!("======================================");
-        println!("{}", "1. Esports".bright_white());
-        println!("{}", "2. Streaming".bright_white());
-        println!("{}", "3. Extreme".bright_white());
-        println!("{}", "4. Exit".bright_white());
+        println!("{}", "1. Esports".bright_black());
+        println!("{}", "2. Streaming".bright_black());
+        println!("{}", "3. Extreme".bright_black());
+        println!("{}", "4. Exit".bright_black());
         println!("======================================");
 
         print!("{}", "Select: ".bright_yellow().bold());
@@ -62,7 +62,7 @@ fn main() -> Result<()> {
             eprintln!();
             eprintln!("{}", "======================================".bright_yellow());
             eprintln!("{}", "[!] Profile failed:".bright_yellow().bold());
-            eprintln!("{}", format!("{e:#}").bright_white());
+            eprintln!("{}", format!("{e:#}").bright_black());
             eprintln!("======================================");
             pause();
         }
