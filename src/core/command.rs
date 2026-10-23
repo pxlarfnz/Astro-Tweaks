@@ -23,8 +23,8 @@ pub fn run_with_timeout(
         .spawn()
         .with_context(|| format!("Failed to start {program}"))?;
 
-    let stdout = child.stdout.take().context("Could not capture command stdout")?;
-    let stderr = child.stderr.take().context("Could not capture command stderr")?;
+    let mut stdout = child.stdout.take().context("Could not capture command stdout")?;
+    let mut stderr = child.stderr.take().context("Could not capture command stderr")?;
 
     let stdout_reader = thread::spawn(move || {
         let mut bytes = Vec::new();
