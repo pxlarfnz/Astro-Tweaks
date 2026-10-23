@@ -2,24 +2,31 @@ name: Build Astro
 
 on:
   push:
+    branches: ["main", "astro-tweaks-hardening-storefront"]
+  pull_request:
     branches: ["main"]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
 
-      - name: Build Astro
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Build release executable
         run: cargo build --release
 
-      - name: Verify executable
+      - name: Verify executable exists
         shell: pwsh
         run: |
           if (!(Test-Path "target/release/Astro.exe")) {
@@ -34,4 +41,3 @@ jobs:
           name: Astro-Windows
           path: target/release/Astro.exe
           if-no-files-found: error
-
