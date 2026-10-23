@@ -1,4 +1,4 @@
-mod config;
+use colored::Colorize;\n\nmod config;
 mod core;
 mod hardware;
 mod modules;
@@ -20,7 +20,7 @@ fn pause() {
 
 fn main() -> Result<()> {
     if let Err(e) = ensure_admin() {
-        eprintln!("[!] {e}");
+        eprintln!("{}", format!("[!] {e}").bright_yellow());
         pause();
         return Err(e);
     }
@@ -29,16 +29,16 @@ fn main() -> Result<()> {
 
     loop {
         println!();
+        println!("{}", "======================================".bright_yellow());
+        println!("{}", "         ASTRO TWEAKS 2.0".bright_yellow().bold());
         println!("======================================");
-        println!("         ASTRO TWEAKS 2.0");
-        println!("======================================");
-        println!("1. Esports");
-        println!("2. Streaming");
-        println!("3. Extreme");
-        println!("4. Exit");
+        println!("{}", "1. Esports".bright_white());
+        println!("{}", "2. Streaming".bright_white());
+        println!("{}", "3. Extreme".bright_white());
+        println!("{}", "4. Exit".bright_white());
         println!("======================================");
 
-        print!("Select: ");
+        print!("{}", "Select: ".bright_yellow().bold());
         io::stdout().flush()?;
 
         let mut input = String::new();
@@ -53,16 +53,16 @@ fn main() -> Result<()> {
             "3" => profiles::extreme::apply(),
             "4" => break,
             _ => {
-                println!("Invalid option. Enter 1, 2, 3, or 4.");
+                println!("{}", "Invalid option. Enter 1, 2, 3, or 4.".bright_yellow());
                 continue;
             }
         };
 
         if let Err(e) = result {
             eprintln!();
-            eprintln!("======================================");
-            eprintln!("[!] Profile failed:");
-            eprintln!("{e:#}");
+            eprintln!("{}", "======================================".bright_yellow());
+            eprintln!("{}", "[!] Profile failed:".bright_yellow().bold());
+            eprintln!("{}", format!("{e:#}").bright_white());
             eprintln!("======================================");
             pause();
         }
